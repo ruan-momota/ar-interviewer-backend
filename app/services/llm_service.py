@@ -129,3 +129,28 @@ def generate_evaluation_report(history: list, job_position: str) -> dict:
             "areas_for_improvement": [],
             "key_suggestion": "Please try again."
         }
+
+def generate_closing_remark(messages: list) -> str:
+    try:
+        context_messages = messages.copy()
+        
+        system_instruction = (
+            "The interview is over. "
+            "Generate a polite, professional closing statement (1-2 sentences). "
+            "Thank the candidate for their time and mention that you will be in touch. "
+            "Do not ask any more questions."
+        )
+        
+        context_messages.append({"role": "system", "content": system_instruction})
+
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=context_messages,
+            temperature=0.6,
+            max_tokens=60
+        )
+        
+        return completion.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"LLM Closing Error: {e}")
+        return "Thank you for your time. We will be in touch shortly."

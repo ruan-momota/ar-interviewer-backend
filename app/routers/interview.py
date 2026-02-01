@@ -3,10 +3,14 @@ from app.schemas.interview import (
     InterviewInitRequest, InterviewInitResponse, 
     InterviewNextRequest, InterviewNextResponse,
     InterviewReplyRequest, InterviewReplyResponse,
-    InterviewReportResponse
+    InterviewReportResponse, InterviewEndRequest,
+    InterviewEndResponse
 )
 from app.services.session_store import SessionManager
-from app.services.llm_service import generate_interview_question, generate_quick_feedback, generate_evaluation_report
+from app.services.llm_service import (
+    generate_interview_question, generate_quick_feedback, 
+    generate_evaluation_report, generate_closing_remark
+)
 
 router = APIRouter(prefix="/v1/interview", tags=["Interview"])
 
@@ -82,4 +86,22 @@ async def get_interview_report(session_id: str):
         strengths=report_data.get("strengths", []),
         areas_for_improvement=report_data.get("areas_for_improvement", []),
         key_suggestion=report_data.get("key_suggestion", "Keep practicing!")
+    )
+
+@router.post("/end", response_model=InterviewEndResponse)
+async def end_interview(request: InterviewEndRequest):
+    session = SessionManager.get_session(request.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    messages = SessionManager.get_messages_for_llm(request.session_id)
+    end_text = generate_closing_remark(messages)
+    
+    SessionManager.add_message(request.session_id, "assistant", end_text)
+    SessionManager.mark_session_finished(request.session_id)
+    
+    return InterviewEndResponse(
+        session_id=request.session_id,
+        end_text=end_text,
+        message="Interview session ended."
     )

@@ -35,3 +35,11 @@ class InterviewReportResponse(BaseModel):
     strengths: List[str]        # bullets points
     areas_for_improvement: List[str] 
     key_suggestion: str         # advice
+
+class InterviewEndRequest(BaseModel):
+    session_id: str
+
+class InterviewEndResponse(BaseModel):
+    session_id: str
+    end_text: str 
+    message: str 

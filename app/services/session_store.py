@@ -69,3 +69,9 @@ class SessionManager:
         messages.extend(session["chat_history"])
         
         return messages
+
+    @staticmethod
+    def mark_session_finished(session_id: str):
+        session = SESSIONS.get(session_id)
+        if session:
+            session["status"] = "finished"
