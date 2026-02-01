@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+python-multipart
+pypdf
+groq
+python_dotenv
