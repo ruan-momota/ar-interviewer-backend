@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 from app.schemas.cv import CVData
 
 class InterviewInitRequest(BaseModel):
@@ -11,3 +11,27 @@ class InterviewInitRequest(BaseModel):
 class InterviewInitResponse(BaseModel):
     session_id: str
     message: str   
+
+class InterviewNextRequest(BaseModel):
+    session_id: str
+
+class InterviewNextResponse(BaseModel):
+    session_id: str
+    interviewer_text: str
+    message_type: str = "question"
+
+class InterviewReplyRequest(BaseModel):
+    session_id: str
+    user_text: str
+
+class InterviewReplyResponse(BaseModel):
+    session_id: str
+    feedback: str 
+
+class InterviewReportResponse(BaseModel):
+    session_id: str
+    score: int                  # 0-100
+    feedback_summary: str       # total feedback
+    strengths: List[str]        # bullets points
+    areas_for_improvement: List[str] 
+    key_suggestion: str         # advice

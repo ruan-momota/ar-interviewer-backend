@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # structure { "session_id": { "cv": ..., "job": ..., "history": [] } }
 SESSIONS: Dict[str, Any] = {}
@@ -49,3 +49,23 @@ class SessionManager:
             "Do not output markdown lists, just speak naturally."
         )
         return prompt
+    
+    @staticmethod
+    def add_message(session_id: str, role: str, content: str):
+        session = SESSIONS.get(session_id)
+        if session:
+            session["chat_history"].append({"role": role, "content": content})
+
+    @staticmethod
+    def get_messages_for_llm(session_id: str) -> List[Dict[str, str]]:
+        '''
+        Build complete prompt for LLM.
+        '''
+        session = SESSIONS.get(session_id)
+        if not session:
+            return []
+
+        messages = [{"role": "system", "content": session["system_prompt"]}]
+        messages.extend(session["chat_history"])
+        
+        return messages
