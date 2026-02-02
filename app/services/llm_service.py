@@ -1,11 +1,27 @@
 import json
+import httpx
 from groq import Groq
+from openai import OpenAI
 from app.config import settings
 from app.schemas.cv import CVData
 
-client = Groq(api_key=settings.GROQ_API_KEY)
+http_client = httpx.Client(transport=httpx.HTTPTransport(local_address="0.0.0.0"))
 
-def parse_cv_with_groq(text: str) -> dict:
+if settings.LLM_PROVIDER == "ollama":
+    client = OpenAI(
+        base_url=settings.OLLAMA_BASE_URL,
+        api_key="ollama",
+        http_client=http_client
+    )
+    MODEL_NAME = settings.OLLAMA_MODEL
+else:
+    client = Groq(
+        api_key=settings.GROQ_API_KEY,
+        http_client=http_client
+    )
+    MODEL_NAME = "llama-3.3-70b-versatile"
+
+def parse_cv_with_llm(text: str) -> dict:
     # CVData.model_json_schema()
     system_prompt = "You are a resume parser. Output strict JSON."
     user_prompt = f"Extract CV data from this text:\n{text[:15000]}"
