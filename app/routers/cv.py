@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.pdf_service import extract_text_from_pdf
-from app.services.llm_service import parse_cv_with_groq
+from app.services.llm_service import parse_cv_with_llm
 from app.schemas.cv import CVData
 
 router = APIRouter(prefix="/v1/cv", tags=["CV Parsing"])
@@ -17,7 +17,7 @@ async def parse_cv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty or scanned PDF")
 
     try:
-        data = parse_cv_with_groq(text)
+        data = parse_cv_with_llm(text)
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
