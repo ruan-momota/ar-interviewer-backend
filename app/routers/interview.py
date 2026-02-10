@@ -51,11 +51,20 @@ async def next_question(request: InterviewNextRequest):
 
 @router.post("/reply", response_model=InterviewReplyResponse)
 async def reply_interview(request: InterviewReplyRequest):
+    print(f"Audio Analysis: {request.voice_data}")
     session = SessionManager.get_session(request.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    SessionManager.add_message(request.session_id, "user", request.user_text)
+    # Combines spoken text with data
+    full_message = request.user_text
+    
+    if request.voice_data:
+        full_message += f"\n\n{request.voice_data}"
+    
+    # Save combined message to history
+    SessionManager.add_message(request.session_id, "user", full_message)
+
     messages = SessionManager.get_messages_for_llm(request.session_id)
     feedback_text = generate_quick_feedback(messages)
     SessionManager.add_message(request.session_id, "assistant", feedback_text)

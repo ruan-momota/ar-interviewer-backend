@@ -23,6 +23,7 @@ class InterviewNextResponse(BaseModel):
 class InterviewReplyRequest(BaseModel):
     session_id: str
     user_text: str
+    voice_data: str
 
 class InterviewReplyResponse(BaseModel):
     session_id: str
