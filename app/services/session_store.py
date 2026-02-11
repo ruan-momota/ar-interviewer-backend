@@ -7,6 +7,19 @@ SESSIONS: Dict[str, Any] = {}
 class SessionManager:
     @staticmethod
     def create_session(cv_data: dict, job_position: str, mode: str) -> str:
+        session_id = str(uuid.uuid4())
+        
+        SESSIONS[session_id] = {
+            "cv": cv_data,
+            "job": job_position,
+            "mode": mode,
+            "current_state": "GREETING", # Track state here
+            "chat_history": []
+        }
+        return session_id
+
+    @staticmethod
+    def create_session(cv_data: dict, job_position: str, mode: str) -> str:
         """
         Init a session.
         """
@@ -26,6 +39,12 @@ class SessionManager:
         
         return session_id
 
+    @staticmethod
+    def update_session_state(session_id: str, new_state: str):
+        session = SESSIONS.get(session_id)
+        if session:
+            session["current_state"] = new_state
+            
     @staticmethod
     def get_session(session_id: str):
         return SESSIONS.get(session_id)

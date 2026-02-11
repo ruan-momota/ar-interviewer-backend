@@ -4,6 +4,8 @@ from groq import Groq
 from openai import OpenAI
 from app.config import settings
 from app.schemas.cv import CVData
+from app.services.interview_manager import InterviewManager
+from app.services.session_store import SessionManager
 
 http_client = httpx.Client(transport=httpx.HTTPTransport(local_address="0.0.0.0"))
 
@@ -43,6 +45,40 @@ def parse_cv_with_llm(text: str) -> dict:
     except Exception as e:
         print(f"LLM Error: {e}")
         raise e
+
+def generate_interview_response(session_id: str, user_input: str) -> str:
+    session = SessionManager.get_session(session_id)
+    history = session["chat_history"]
+
+    # 1. Intent Analysis: Determine if we should change states
+    classifier_prompt = InterviewManager.get_state_classifier_prompt(
+        history, user_input, session["current_state"]
+    )
+    
+    state_check = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": classifier_prompt}],
+        temperature=0
+    )
+    
+    new_state = state_check.choices[0].message.content.strip().upper()
+    if new_state in [InterviewManager.GREETING, InterviewManager.INTRODUCTION, InterviewManager.QUESTIONS, InterviewManager.CLOSING]:
+        SessionManager.update_session_state(session_id, new_state)
+
+    # 2. Response Generation: Use the updated state
+    system_prompt = InterviewManager.get_main_system_prompt(
+        session["cv"], session["job"], session["mode"], session["current_state"]
+    )
+
+    messages = [{"role": "system", "content": system_prompt}] + history
+    
+    completion = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=messages,
+        temperature=0.7
+    )
+    
+    return completion.choices[0].message.content.strip()
 
 def generate_interview_question(messages: list) -> str:
     """
@@ -130,7 +166,7 @@ def generate_evaluation_report(history: list, job_position: str) -> dict:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.2,
+            temperature=0.1,
             response_format={"type": "json_object"}
         )
         
