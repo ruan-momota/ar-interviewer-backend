@@ -95,7 +95,6 @@ def generate_quick_feedback(messages: list) -> str:
         return "I see."
 
 def generate_evaluation_report(history: list, job_position: str) -> dict:
-    # turns chat history into transcript
     transcript = ""
     for msg in history:
         role = "Interviewer" if msg["role"] == "assistant" else "Candidate"
@@ -103,23 +102,29 @@ def generate_evaluation_report(history: list, job_position: str) -> dict:
 
     schema_structure = {
         "score": 85,
-        "feedback_summary": "Overall good performance...",
-        "strengths": ["Clear communication", "Strong technical knowledge"],
-        "areas_for_improvement": ["Lack of specific examples", "Speaking too fast"],
-        "key_suggestion": "Try to use the STAR method for behavioral questions."
+        "feedback_summary": "Good content but answers were too vague.",
+        "strengths": ["Polite tone", "Good vocabulary"],
+        "areas_for_improvement": ["Answers lacked metrics", "Did not ask questions back"],
+        "mission": "Include specific metrics (numbers/%) in your project descriptions."
     }
 
     system_prompt = (
-        "You are an expert Interview Coach and Recruiter. "
-        "Your task is to analyze the following interview transcript and provide a structured evaluation report. "
-        "Be constructive, professional, and specific. "
+        "You are an expert Interview Coach. "
+        "Analyze the transcript based ONLY on the text content. "
+        "You cannot see or hear the candidate. "
         "Output ONLY valid JSON."
     )
 
     user_prompt = (
         f"Target Job Position: {job_position}\n\n"
         f"INTERVIEW TRANSCRIPT:\n{transcript}\n\n"
-        f"Analyze the candidate's performance based on: clarity, relevance, confidence, and content.\n"
+        f"Analyze the candidate's performance based on text content (clarity, structure, specificity).\n\n"
+        f"IMPORTANT GUIDELINES FOR 'mission' FIELD:\n"
+        f"1. It must be ONE single, actionable task for the NEXT interview.\n"
+        f"2. **CRITICAL**: Since you interact via text only, DO NOT mention body language, eye contact, voice tone, or appearance.\n"
+        f"3. Focus on: Answer Structure (e.g., STAR method), Specificity (using numbers/tools), Length (conciseness), or Interaction (asking questions).\n"
+        f"4. Start with a VERB. Max 15 words.\n"
+        f"5. Example GOOD missions: 'Use the STAR method for one answer', 'Mention 3 specific technical tools', 'Keep answers under 5 sentences'.\n\n"
         f"Return a JSON object matching this structure:\n{json.dumps(schema_structure)}"
     )
 
@@ -143,7 +148,7 @@ def generate_evaluation_report(history: list, job_position: str) -> dict:
             "feedback_summary": "Error generating report.",
             "strengths": [],
             "areas_for_improvement": [],
-            "key_suggestion": "Please try again."
+            "mission": "Provide a concrete example when answering." 
         }
 
 def generate_closing_remark(messages: list) -> str:

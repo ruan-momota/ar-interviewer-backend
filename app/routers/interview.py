@@ -85,7 +85,7 @@ async def get_interview_report(session_id: str):
         feedback_summary=report_data.get("feedback_summary", "No summary available."),
         strengths=report_data.get("strengths", []),
         areas_for_improvement=report_data.get("areas_for_improvement", []),
-        key_suggestion=report_data.get("key_suggestion", "Keep practicing!")
+        mission=report_data.get("mission", "Keep practicing!")
     )
 
 @router.post("/end", response_model=InterviewEndResponse)

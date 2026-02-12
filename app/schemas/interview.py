@@ -34,7 +34,7 @@ class InterviewReportResponse(BaseModel):
     feedback_summary: str       # total feedback
     strengths: List[str]        # bullets points
     areas_for_improvement: List[str] 
-    key_suggestion: str         # advice
+    mission: str 
 
 class InterviewEndRequest(BaseModel):
     session_id: str
