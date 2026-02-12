@@ -1,74 +1,45 @@
 import uuid
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
-# structure { "session_id": { "cv": ..., "job": ..., "history": [] } }
+# Global in-memory storage
+# Structure: { "session_id": { "cv": {}, "job": "", "current_state": "", "chat_history": [], ... } }
 SESSIONS: Dict[str, Any] = {}
 
 class SessionManager:
     @staticmethod
     def create_session(cv_data: dict, job_position: str, mode: str) -> str:
+        """
+        Initialize a new session with default state.
+        """
         session_id = str(uuid.uuid4())
         
         SESSIONS[session_id] = {
             "cv": cv_data,
             "job": job_position,
             "mode": mode,
-            "current_state": "GREETING", # Track state here
+            "current_state": "GREETING",  # Initialize State
+            "question_count": 0,          # Initialize Counter
             "chat_history": []
         }
+        
         return session_id
 
     @staticmethod
-    def create_session(cv_data: dict, job_position: str, mode: str) -> str:
-        """
-        Init a session.
-        """
-        session_id = str(uuid.uuid4())
-        
-        # build system prompt
-        system_prompt = SessionManager._build_system_prompt(cv_data, job_position, mode)
-        
-        # init store structure
-        SESSIONS[session_id] = {
-            "cv": cv_data,
-            "job": job_position,
-            "mode": mode,
-            "system_prompt": system_prompt,
-            "chat_history": []
-        }
-        
-        return session_id
+    def get_session(session_id: str) -> Optional[Dict[str, Any]]:
+        return SESSIONS.get(session_id)
 
     @staticmethod
     def update_session_state(session_id: str, new_state: str):
         session = SESSIONS.get(session_id)
         if session:
             session["current_state"] = new_state
-            
-    @staticmethod
-    def get_session(session_id: str):
-        return SESSIONS.get(session_id)
 
     @staticmethod
-    def _build_system_prompt(cv, job, mode) -> str:
-        cv_summary = f"Candidate Name: {cv.get('name')}. "
-        cv_summary += f"Skills: {', '.join(cv.get('skills', []))}. "
-        
-        if mode == "technical":
-            role_desc = "You are a Senior Technical Lead. Focus on hard skills, coding knowledge, and project details."
-        else:
-            role_desc = "You are an HR Recruiter. Focus on soft skills, culture fit, and motivation."
+    def increment_question_count(session_id: str):
+        session = SESSIONS.get(session_id)
+        if session:
+            session["question_count"] += 1
 
-        prompt = (
-            f"{role_desc} "
-            f"You are interviewing a candidate for the position of {job}. "
-            f"Here is the candidate's summary: {cv_summary}. "
-            "Your goal is to evaluate them. "
-            "Keep your questions concise and spoken-style (suitable for TTS)."
-            "Do not output markdown lists, just speak naturally."
-        )
-        return prompt
-    
     @staticmethod
     def add_message(session_id: str, role: str, content: str):
         session = SESSIONS.get(session_id)
@@ -76,21 +47,12 @@ class SessionManager:
             session["chat_history"].append({"role": role, "content": content})
 
     @staticmethod
-    def get_messages_for_llm(session_id: str) -> List[Dict[str, str]]:
-        '''
-        Build complete prompt for LLM.
-        '''
+    def get_history(session_id: str) -> List[Dict[str, str]]:
         session = SESSIONS.get(session_id)
-        if not session:
-            return []
-
-        messages = [{"role": "system", "content": session["system_prompt"]}]
-        messages.extend(session["chat_history"])
-        
-        return messages
+        return session.get("chat_history", []) if session else []
 
     @staticmethod
     def mark_session_finished(session_id: str):
         session = SESSIONS.get(session_id)
         if session:
-            session["status"] = "finished"
+            session["current_state"] = "FINISHED"
