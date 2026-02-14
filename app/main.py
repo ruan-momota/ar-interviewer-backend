@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import cv, interview
+from app.routers import cv, interview, admin
 from app.database import create_db_and_tables
 
 app = FastAPI(title="AR Interview Coach Backend")
@@ -12,6 +12,7 @@ def on_startup():
 # router registration
 app.include_router(cv.router)
 app.include_router(interview.router)
+app.include_router(admin.router)
 
 if __name__ == "__main__":
     import uvicorn

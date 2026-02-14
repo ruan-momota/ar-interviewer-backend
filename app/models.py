@@ -14,11 +14,17 @@ class JobProfile(SQLModel, table=True):
 
 class Candidate(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    name: str
+    name: str = Field(default="Unknown")
     email: Optional[str] = None
     phone: Optional[str] = None
-    raw_text: Optional[str] = Field(default=None, description="CV Original Text")
+    job_title: Optional[str] = None 
+    
     skills: str = Field(default="[]")
+    education_json: str = Field(default="[]")  
+    experience_json: str = Field(default="[]") 
+    projects_json: str = Field(default="[]") 
+    
+    raw_text: Optional[str] = Field(default=None)
     
     sessions: List["InterviewSession"] = Relationship(back_populates="candidate")
 

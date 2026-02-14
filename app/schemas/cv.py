@@ -28,3 +28,6 @@ class CVData(BaseModel):
     experience: List[Experience]
     projects: List[Project]
     skills: List[str]
+
+class CVResponse(CVData):
+    id: str

@@ -6,3 +6,4 @@ groq
 python_dotenv
 openai
 sqlmodel
+qrcode[pil]

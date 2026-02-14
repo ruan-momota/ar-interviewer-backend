@@ -20,3 +20,5 @@ Thumbs.db
 
 *.log
 logs/
+
+interview.db
