@@ -69,7 +69,7 @@ class UploadToken(SQLModel, table=True):
 
 class PromptTemplate(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(unique=True)  # 模板名称，例如 "technical_hard", "hr_friendly"
+    name: str = Field(unique=True)  # i.e. "technical_hard", "hr_friendly"
     description: Optional[str] = None
-    template_text: str  # 核心字段：包含 {name}, {skills}, {job} 等占位符的文本
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    template_text: str  # include {name}, {skills}, {job}...
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

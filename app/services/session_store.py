@@ -3,33 +3,41 @@
 import json
 from typing import List, Dict, Optional
 from sqlmodel import Session, select, desc
-from app.models import InterviewSession, Candidate, ChatMessage, JobProfile
+from app.models import (
+    InterviewSession, Candidate, ChatMessage, JobProfile,
+    PromptTemplate
+)
+
 
 class SessionManager:
     def __init__(self, db: Session):
         self.db = db
 
     def create_session(self, cv_data: dict, job_position: str, mode: str) -> str:
-        """
-        Init a interview session, save candidates and generate a system prompt.
-        """
-        # create or get job profile
+        # ensure there is template in db
+        self._ensure_default_templates()
+
+        # get JobProfile
         job = self.db.exec(select(JobProfile).where(JobProfile.title == job_position)).first()
         if not job:
-            # generate system prompt
-            sys_prompt_text = self._build_system_prompt_text(cv_data, job_position, mode)
+            prompt_text = self._build_system_prompt(cv_data, job_position, mode)
             job = JobProfile(
                 title=job_position,
-                system_prompt=sys_prompt_text,
+                system_prompt=prompt_text,
                 description=f"Auto-generated for {mode} mode"
             )
             self.db.add(job)
             self.db.commit()
             self.db.refresh(job)
+        else:
+            prompt_text = self._build_system_prompt(cv_data, job_position, mode)
+            # update job prompt (optional)
+            job.system_prompt = prompt_text
+            self.db.add(job)
+            self.db.commit()
 
-        # Create candidate
+        # create candidate
         skills_str = json.dumps(cv_data.get("skills", []))
-        
         candidate = Candidate(
             name=cv_data.get("name", "Unknown Candidate"),
             email=cv_data.get("email"),
@@ -40,7 +48,7 @@ class SessionManager:
         self.db.commit()
         self.db.refresh(candidate)
 
-        # Create InterviewSession
+        # create session
         session = InterviewSession(
             candidate_id=candidate.id,
             job_profile_id=job.id,
@@ -49,9 +57,7 @@ class SessionManager:
         self.db.add(session)
         self.db.commit()
         self.db.refresh(session)
-
-        # System prompt as the first message
-        self.add_message(session.id, "system", job.system_prompt)
+        self.add_message(session.id, "system", prompt_text)
 
         return session.id
 
@@ -68,17 +74,9 @@ class SessionManager:
         self.db.commit()
 
     def get_messages_for_llm(self, session_id: str) -> List[Dict[str, str]]:
-        """
-        Get all messages and turn to list that LLM can accept
-        """
         statement = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.id)
         results = self.db.exec(statement).all()
-        
-        messages = []
-        for msg in results:
-            messages.append({"role": msg.role, "content": msg.content})
-        
-        return messages
+        return [{"role": msg.role, "content": msg.content} for msg in results]
 
     def mark_session_finished(self, session_id: str):
         session = self.get_session(session_id)
@@ -87,21 +85,62 @@ class SessionManager:
             self.db.add(session)
             self.db.commit()
 
-    def _build_system_prompt_text(self, cv: dict, job: str, mode: str) -> str:
-        cv_summary = f"Candidate Name: {cv.get('name')}. "
-        cv_summary += f"Skills: {', '.join(cv.get('skills', []))}. "
-        
-        if mode == "technical":
-            role_desc = "You are a Senior Technical Lead. Focus on hard skills, coding knowledge, and project details."
-        else:
-            role_desc = "You are an HR Recruiter. Focus on soft skills, culture fit, and motivation."
+    def _build_system_prompt(self, cv: dict, job_title: str, mode: str) -> str:
+        """
+        read template from db
+        """
+        template_name = mode.lower() 
+        template = self.db.exec(select(PromptTemplate).where(PromptTemplate.name == template_name)).first()
 
-        prompt = (
-            f"{role_desc} "
-            f"You are interviewing a candidate for the position of {job}. "
-            f"Here is the candidate's summary: {cv_summary}. "
-            "Your goal is to evaluate them. "
-            "Keep your questions concise and spoken-style (suitable for TTS)."
-            "Do not output markdown lists, just speak naturally."
-        )
+        if not template:
+            template = self.db.exec(select(PromptTemplate).where(PromptTemplate.name == "default")).first()
+
+        if not template:
+            base_text = "You are an interviewer. Evaluate the candidate."
+        else:
+            base_text = template.template_text
+
+        # prepare data
+        skills_list = cv.get('skills', [])
+        if isinstance(skills_list, list):
+            skills_str = ", ".join(skills_list)
+        else:
+            skills_str = str(skills_list)
+
+        # replace placeholder
+        prompt = base_text.replace("{name}", cv.get('name', 'Candidate')) \
+                          .replace("{skills}", skills_str) \
+                          .replace("{job_title}", job_title)
+
         return prompt
+
+    def _ensure_default_templates(self):
+        existing = self.db.exec(select(PromptTemplate)).first()
+        if existing:
+            return
+
+        # define default template
+        technical_prompt = (
+            "You are a Senior Technical Lead interviewing {name} for the position of {job_title}. "
+            "The candidate has the following skills: {skills}. "
+            "Your goal is to assess their technical depth. "
+            "Start by asking about their most complex project. "
+            "Keep questions short and spoken-style. Do NOT use markdown formatting."
+        )
+
+        hr_prompt = (
+            "You are an HR Manager interviewing {name} for the position of {job_title}. "
+            "Skills: {skills}. "
+            "Focus on cultural fit, teamwork, and soft skills. "
+            "Be polite, encouraging, and professional. "
+            "Keep responses concise (1-2 sentences)."
+        )
+
+        t1 = PromptTemplate(name="technical", template_text=technical_prompt, description="Hard skills focus")
+        t2 = PromptTemplate(name="hr", template_text=hr_prompt, description="Soft skills focus")
+        t3 = PromptTemplate(name="default", template_text=hr_prompt, description="Fallback")
+
+        self.db.add(t1)
+        self.db.add(t2)
+        self.db.add(t3)
+        self.db.commit()

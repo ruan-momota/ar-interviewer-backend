@@ -19,3 +19,16 @@ class InterviewListSchema(BaseModel):
 class InterviewDetailSchema(InterviewListSchema):
     messages: List[dict]
     report: Optional[dict] = None
+
+class PromptTemplateCreate(BaseModel):
+    name: str
+    template_text: str
+    description: Optional[str] = None
+
+# --- Dashboard Schema ---
+class DashboardStatsSchema(BaseModel):
+    total_candidates: int
+    total_interviews: int
+    interviews_today: int
+    average_score: float
+    recent_trend: List[dict] # [{"date": "2023-10-01", "count": 5}, ...]

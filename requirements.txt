@@ -7,3 +7,7 @@ python_dotenv
 openai
 sqlmodel
 qrcode[pil]
+install 
+streamlit 
+requests 
+pandas
