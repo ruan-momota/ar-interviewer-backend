@@ -59,3 +59,17 @@ class ChatMessage(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     session: Optional[InterviewSession] = Relationship(back_populates="messages")
+
+class UploadToken(SQLModel, table=True):
+    token: str = Field(primary_key=True)
+    job_id: Optional[int] = Field(default=None)
+    is_used: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # expiration_time
+
+class PromptTemplate(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(unique=True)  # 模板名称，例如 "technical_hard", "hr_friendly"
+    description: Optional[str] = None
+    template_text: str  # 核心字段：包含 {name}, {skills}, {job} 等占位符的文本
+    created_at: datetime = Field(default_factory=datetime.utcnow)
