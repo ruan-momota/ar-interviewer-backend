@@ -8,6 +8,8 @@ class InterviewInitRequest(BaseModel):
     job_description: Optional[str] = None 
     interviewer_mode: str = "social"
 
+    baseline_volume: float
+    baseline_wpm: float
 class InterviewInitResponse(BaseModel):
     session_id: str
     message: str   
@@ -23,6 +25,9 @@ class InterviewNextResponse(BaseModel):
 class InterviewReplyRequest(BaseModel):
     session_id: str
     user_text: str
+    volume: float = 0.0
+    pitch: float = 0.0
+    wpm: float = 0.0
 
 class InterviewReplyResponse(BaseModel):
     session_id: str
@@ -35,6 +40,7 @@ class InterviewReportResponse(BaseModel):
     strengths: List[str]        # bullets points
     areas_for_improvement: List[str] 
     mission: str 
+    voice_analysis: str
 
 class InterviewEndRequest(BaseModel):
     session_id: str
