@@ -4,6 +4,7 @@ from groq import Groq
 from openai import OpenAI
 from app.config import settings
 from app.schemas.cv import CVData
+from app.schemas.interview import InterviewPhase
 
 http_client = httpx.Client(transport=httpx.HTTPTransport(local_address="0.0.0.0"))
 
@@ -20,6 +21,22 @@ else:
         http_client=http_client
     )
     MODEL_NAME = "llama-3.3-70b-versatile"
+
+class LLMService:
+    
+    PHASE_PROMPTS = {
+        InterviewPhase.GREETING: "You are in the greeting phase. Be warm and welcoming. Ask about their day.",
+        InterviewPhase.INTRODUCTION: "Introduce yourself as an AI interviewer. Explain the interview structure briefly.",
+        InterviewPhase.QUESTIONS: "Ask relevant technical and behavioral questions based on the candidate's CV.",
+        InterviewPhase.CLOSING: "Thank the candidate and provide next steps information."
+    }
+    
+    def get_system_prompt(self, phase: InterviewPhase, cv_data: dict = None) -> str:
+        """Generate phase-specific system prompt"""
+        base_prompt = "You are an AI interviewer conducting a professional job interview."
+        phase_instruction = self.PHASE_PROMPTS.get(phase, "")
+        
+        return f"{base_prompt}\n\n{phase_instruction}\n\nCV Data: {cv_data}"
 
 def parse_cv_with_llm(text: str) -> dict:
     # CVData.model_json_schema()

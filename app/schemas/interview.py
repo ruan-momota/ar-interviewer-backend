@@ -1,7 +1,19 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from app.schemas.cv import CVData
+from enum import Enum
 
+class InterviewPhase(str, Enum):
+    GREETING = "GREETING"
+    INTRODUCTION = "INTRODUCTION"
+    QUESTIONS = "QUESTIONS"
+    CLOSING = "CLOSING"
+
+class InterviewState:
+    # ...existing code...
+    current_phase: InterviewPhase = InterviewPhase.GREETING
+    phase_transitions: dict = {}
+    
 class InterviewInitRequest(BaseModel):
     cv_data: CVData       
     job_position: str    

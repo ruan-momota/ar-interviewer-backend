@@ -1,3 +1,16 @@
+from enum import Enum
+
+class InterviewPhase(str, Enum):
+    GREETING = "GREETING"
+    INTRODUCTION = "INTRODUCTION"
+    QUESTIONS = "QUESTIONS"
+    CLOSING = "CLOSING"
+
+class InterviewState:
+    # ...existing code...
+    current_phase: InterviewPhase = InterviewPhase.GREETING
+    phase_transitions: dict = {}
+    
 from fastapi import APIRouter, HTTPException
 from app.schemas.interview import (
     InterviewInitRequest, InterviewInitResponse, 
@@ -105,3 +118,23 @@ async def end_interview(request: InterviewEndRequest):
         end_text=end_text,
         message="Interview session ended."
     )
+
+@router.post("/message")
+async def send_message(session_id: str, message: str):
+    interview_manager = session_store.get_session(session_id)
+    
+    if not interview_manager:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    result = await interview_manager.process_response(message)
+    
+    response = {
+        "ai_response": result["response"],
+        "current_phase": result["current_phase"]
+    }
+    
+    # Include transition message if present
+    if result.get("transition"):
+        response["transition"] = result["transition"]
+    
+    return response
