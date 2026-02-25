@@ -38,7 +38,7 @@ def analyze_voice_metrics(metrics: List[Dict[str, float]], baselines: Dict[str, 
     if avg_vol < base_vol * 0.5:
         feedback_parts.append("You were much quieter. Projecting can help demonstrate authority.")
     elif avg_vol > base_vol * 1.5:
-        feedback_parts.append("You were much louder than normal. Shouting can radiate unneccesary hostility.")
+        feedback_parts.append("You were much louder than normal.\nShouting can radiate unneccesary hostility.")
     else:
         feedback_parts.append("Your vocal volume remained steady and consistent.")
     
